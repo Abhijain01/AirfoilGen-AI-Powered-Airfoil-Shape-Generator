@@ -91,6 +91,10 @@ def generate_x_cosine(n_points=100):
     """
     theta = np.linspace(0, np.pi, n_points)
     x = 0.5 * (1.0 - np.cos(theta))
+    # Prevent exactly 0.0 or 1.0 which can cause Fortran floating point issues
+    # at the geometrically sharp leading and trailing edges.
+    x[0] = 1e-5
+    x[-1] = 1.0 - 1e-5
     return x
 
 
@@ -142,10 +146,19 @@ def cst_to_coordinates(cst_upper, cst_lower, n_points=100):
     y_lower -= x * (TE_THICKNESS / 2.0)
     
     # Combine: upper (LE→TE) then lower (LE→TE)
-    x_all = np.concatenate([x, x])
+    # Important: Reverse upper so it goes TE -> LE
+    # Then append lower (LE -> TE), but skip the first point of lower
+    # to avoid a duplicate Leading Edge coordinate!
+    x_upper = x[::-1]
+    y_upper = y_upper[::-1]
+    
+    x_lower = x[1:]
+    y_lower = y_lower[1:]
+    
+    x_all = np.concatenate([x_upper, x_lower])
     y_all = np.concatenate([y_upper, y_lower])
     
-    return x_all, y_all, x, y_upper, x, y_lower
+    return x_all, y_all, x, y_upper[::-1], x, y_lower
 
 
 def coordinates_to_cst(x_upper, y_upper, x_lower, y_lower, n_weights=8):
