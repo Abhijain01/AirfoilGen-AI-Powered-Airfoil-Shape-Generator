@@ -163,6 +163,11 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
             timeout=max(total_timeout, 10)
         )
         
+        if process.returncode != 0:
+            print(f"\n[XFOIL ERROR] Exit code {process.returncode}")
+            print(f"STDOUT: {stdout_data}")
+            print(f"STDERR: {stderr_data}")
+        
     except subprocess.TimeoutExpired:
         process.kill()
         pass
