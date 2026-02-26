@@ -66,7 +66,8 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
     
     # Unique ID for this run to avoid collisions
     run_id = f"{time.time()}_{np.random.randint(0, 1000)}"
-    airfoil_file = os.path.join(TEMP_DIR, f"airfoil_{run_id}.dat")
+    airfoil_base = f"airfoil_{run_id}.dat"
+    airfoil_file = os.path.join(TEMP_DIR, airfoil_base)
     
     # 1. Write Airfoil File
     with open(airfoil_file, 'w') as f:
@@ -87,7 +88,7 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
     input_script.append("")
     
     # Load airfoil
-    input_script.append(f"LOAD {airfoil_file}")
+    input_script.append(f"LOAD {airfoil_base}")
     input_script.append("") # Confirm name
     
     # Panel operations
@@ -101,7 +102,8 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
     polar_files = {}
 
     for Re in reynolds_numbers:
-        polar_file = os.path.join(TEMP_DIR, f"polar_{run_id}_Re{int(Re)}.txt")
+        polar_base = f"polar_{run_id}_Re{int(Re)}.txt"
+        polar_file = os.path.join(TEMP_DIR, polar_base)
         polar_files[Re] = polar_file
         
         # Remove if exists
@@ -112,7 +114,7 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
         
         # Start accumulation
         input_script.append("PACC")
-        input_script.append(f"{polar_file}")
+        input_script.append(f"{polar_base}")
         input_script.append("") # No dump file
         
         # Alpha sequence
@@ -160,7 +162,7 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
                 stdout=out_f,
                 stderr=err_f,
                 text=True,
-                cwd=os.getcwd(),
+                cwd=TEMP_DIR,  # CRITICAL: Run IN the temp directory
                 startupinfo=startupinfo,
                 creationflags=creationflags,
                 preexec_fn=preexec_fn
