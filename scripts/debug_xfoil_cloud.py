@@ -28,8 +28,32 @@ def run_debug():
         
     print(f"Command: {cmd}")
     
-    # Simple script to just boot XFOIL and quit
-    script = "QUIT\n"
+    # 1. Create a dummy airfoil .dat file
+    dat_path = os.path.join(os.getcwd(), "debug_airfoil.dat")
+    with open(dat_path, "w") as f:
+        f.write("DEBUG_AIRFOIL\n")
+        f.write("  1.000000  0.001000\n")
+        f.write("  0.500000  0.050000\n")
+        f.write("  0.000000  0.000000\n")
+        f.write("  0.500000 -0.050000\n")
+        f.write("  1.000000 -0.001000\n")
+        
+    print(f"Created dummy airfoil at: {dat_path}")
+    
+    # 2. Build full execution script
+    script = f"LOAD {dat_path}\n"
+    script += "PANE\n"
+    script += "OPER\n"
+    script += "VISC 500000\n"
+    script += "ITER 100\n"
+    script += "PACC\n"
+    script += "debug_polar.txt\n\n"
+    script += "ALFA 5.0\n"
+    script += "PACC\n"
+    script += "QUIT\n"
+    
+    print("Running script:")
+    print(script)
     
     try:
         process = subprocess.Popen(
@@ -40,7 +64,7 @@ def run_debug():
             text=True
         )
         
-        stdout, stderr = process.communicate(input=script, timeout=10)
+        stdout, stderr = process.communicate(input=script, timeout=15)
         
         print("\n--- STDOUT ---")
         print(stdout)
@@ -50,6 +74,12 @@ def run_debug():
         
     except Exception as e:
         print(f"\nEXCEPTION CAUGHT: {e}")
+    finally:
+        try:
+            os.remove(dat_path)
+            os.remove(os.path.join(os.getcwd(), "debug_polar.txt"))
+        except:
+            pass
 
 if __name__ == "__main__":
     run_debug()
