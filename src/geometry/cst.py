@@ -135,6 +135,12 @@ def cst_to_coordinates(cst_upper, cst_lower, n_points=100):
     y_upper = cst_shape(cst_upper, x)
     y_lower = -cst_shape(cst_lower, x)  # negative because lower surface
     
+    # Introduce extremely small blunt trailing edge (TE)
+    # The Linux version of XFOIL crashes with SIGFPE if TE thickness is exactly 0.0
+    TE_THICKNESS = 0.001
+    y_upper += x * (TE_THICKNESS / 2.0)
+    y_lower -= x * (TE_THICKNESS / 2.0)
+    
     # Combine: upper (LE→TE) then lower (LE→TE)
     x_all = np.concatenate([x, x])
     y_all = np.concatenate([y_upper, y_lower])
