@@ -129,13 +129,22 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
     
     # 3. Run XFOIL (Single Process)
     try:
+        startupinfo = None
+        creationflags = 0
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            creationflags = subprocess.CREATE_NO_WINDOW
+
         process = subprocess.Popen(
             XFOIL_CMD,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            cwd=os.getcwd()
+            cwd=os.getcwd(),
+            startupinfo=startupinfo,
+            creationflags=creationflags
         )
         
         # Send input
