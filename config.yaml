@@ -1,0 +1,166 @@
+# ============================================================
+# AIRFOIL GENERATOR — MASTER CONFIGURATION
+# ============================================================
+# All settings in ONE place. Change here, affects everywhere.
+# ============================================================
+
+project:
+  name: "AirfoilGen"
+  version: "1.0.0"
+  description: "AI-Powered Airfoil Shape Generator"
+  random_seed: 42
+  device: "auto"  # "auto", "cpu", or "cuda"
+
+# ============================================================
+# DATA SETTINGS
+# ============================================================
+data:
+  # Airfoil geometry
+  n_surface_points: 200        # points per airfoil (100 upper + 100 lower)
+  spacing: "cosine"            # cosine spacing (more points at LE/TE)
+  n_cst_upper: 8               # CST parameters for upper surface
+  n_cst_lower: 8               # CST parameters for lower surface
+  n_cst_total: 16              # total CST parameters (upper + lower)
+
+  # Data sources
+  sources:
+    uiuc: true                  # download from UIUC database
+    naca_4digit: true           # generate NACA 4-digit family
+    naca_5digit: false          # generate NACA 5-digit family (future)
+    random_cst: true            # generate random CST airfoils
+    n_random_cst: 2000          # how many random airfoils to generate
+
+  # XFOIL settings
+  xfoil:
+    max_iterations: 100
+    n_crit: 9                   # turbulence parameter
+    timeout_seconds: 10         # kill XFOIL if it hangs
+    alpha_min: -5.0
+    alpha_max: 20.0
+    alpha_step: 1.0
+    reynolds_numbers:
+      - 100000
+      - 300000
+      - 500000
+      - 1000000
+      - 3000000
+
+  # Data splitting
+  split:
+    train_fraction: 0.70
+    val_fraction: 0.15
+    test_fraction: 0.15
+    split_by: "airfoil"         # NEVER split by data point!
+
+  # Normalization
+  normalization:
+    method: "standard"          # zero mean, unit variance
+    cd_transform: "log10"       # log transform for Cd
+
+# ============================================================
+# FORWARD MODEL SETTINGS (Performance Predictor)
+# ============================================================
+forward_model:
+  architecture: "mlp"
+  input_dim: 18                 # 16 CST + alpha + log10(Re)
+  output_dim: 3                 # Cl, Cd, Cm
+  hidden_dims: [256, 512, 256, 128]
+  dropout: 0.1
+  activation: "silu"
+  batch_norm: true
+
+  training:
+    optimizer: "adamw"
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    batch_size: 512
+    max_epochs: 300
+    early_stopping_patience: 30
+    scheduler: "cosine"
+
+# ============================================================
+# GENERATOR MODEL SETTINGS (CVAE)
+# ============================================================
+generator:
+  architecture: "cvae"
+  latent_dim: 32                # dimension of latent space z
+
+  # Condition inputs
+  condition_dim: 5              # Cl, Cd, Re, alpha, thickness
+  output_dim: 16                # CST parameters
+
+  encoder:
+    input_dim: 21               # CST(16) + conditions(5)
+    hidden_dims: [256, 256, 128]
+    activation: "silu"
+    batch_norm: true
+
+  decoder:
+    input_dim: 37               # latent(32) + conditions(5)
+    hidden_dims: [256, 512, 512, 256, 128]
+    activation: "silu"
+    batch_norm: true
+
+  training:
+    optimizer: "adamw"
+    learning_rate: 0.0005
+    weight_decay: 0.0001
+    batch_size: 256
+    max_epochs: 500
+    early_stopping_patience: 50
+    scheduler: "one_cycle"
+
+    loss_weights:
+      reconstruction: 1.0       # CST reconstruction accuracy
+      kl_divergence: 0.001      # latent space regularization
+      performance: 2.0          # does it achieve target Cl?
+      thickness: 1.0            # does it meet thickness constraint?
+      smoothness: 0.5           # is the shape smooth?
+
+    kl_warmup_epochs: 50        # gradually increase KL weight
+
+  generation:
+    n_candidates: 50            # generate this many candidates
+    n_output: 10                # return top 10 to user
+    cl_tolerance: 0.05          # acceptable |Cl - Cl_target|
+    max_retries: 100            # retry if no valid designs found
+
+# ============================================================
+# EVALUATION SETTINGS
+# ============================================================
+evaluation:
+  n_test_cases: 500
+  verify_with_xfoil: true
+  metrics:
+    - "cl_error"
+    - "shape_validity"
+    - "diversity"
+    - "constraint_satisfaction"
+  visualization:
+    n_samples: 20
+    save_plots: true
+    plot_format: "png"
+    dpi: 150
+
+# ============================================================
+# EXPORT SETTINGS
+# ============================================================
+export:
+  formats:
+    - "dat"                     # XFOIL format
+    - "csv"                     # general CSV
+    - "json"                    # web format
+  coordinate_precision: 6       # decimal places
+  include_metadata: true        # add Cl, Cd info in file header
+
+# ============================================================
+# PATHS
+# ============================================================
+paths:
+  raw_data: "data/raw"
+  processed_data: "data/processed"
+  generated_designs: "data/generated_designs"
+  checkpoints: "checkpoints"
+  results: "results"
+  logs: "logs"
+  figures: "results/figures"

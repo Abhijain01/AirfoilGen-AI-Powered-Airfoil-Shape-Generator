@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# Virtual Environment
+venv/
+env/
+.venv/
+.venv39/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data (too large for git)
+data/raw/
+data/processed/
+data/generated_designs/
+
+# Model checkpoints (too large for git)
+checkpoints/*.pt
+checkpoints/*.pkl
+
+# Results
+results/figures/
+results/metrics/
+results/exported_airfoils/
+
+# Logs
+logs/
+*.log
+xfoil_temp/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keep directory structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/generated_designs/.gitkeep
+!checkpoints/.gitkeep
+!results/figures/.gitkeep
+!results/metrics/.gitkeep
+!results/exported_airfoils/.gitkeep
+!logs/.gitkeep
