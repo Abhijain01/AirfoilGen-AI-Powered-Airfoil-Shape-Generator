@@ -22,6 +22,7 @@ import sys
 import json
 import time
 import pandas as pd
+import subprocess
 
 # Project setup
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -673,6 +674,23 @@ def main():
         ref_st = st.slider("Newton steps", 3, 20, ref_st)
         cl_tol_p = st.slider("Cl tolerance %", 1, 10, int(cl_tol * 100))
         cl_tol = cl_tol_p / 100.0
+
+    # ═══════════════════════════════════════════════════
+    # DEBUG XFOIL BUTTON
+    # ═══════════════════════════════════════════════════
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🪲 Debug tools")
+    if st.sidebar.button("Run XFOIL Debug Script"):
+        st.markdown("### XFOIL Configuration Debug:")
+        try:
+            debug_script_path = os.path.join(project_root, 'scripts', 'debug_xfoil_cloud.py')
+            result = subprocess.run([sys.executable, debug_script_path], capture_output=True, text=True, timeout=15)
+            st.code(result.stdout, language='bash')
+            if result.stderr:
+                st.code(result.stderr, language='bash')
+        except Exception as e:
+            st.error(f"Failed to run debug script: {e}")
+        st.stop()
 
     # ═══════════════════════════════════════════════════
     # MAIN AREA
