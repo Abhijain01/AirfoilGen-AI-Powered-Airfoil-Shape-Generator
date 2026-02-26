@@ -13,6 +13,7 @@ import pandas as pd
 import warnings
 import shutil
 import time
+import signal
 from tqdm import tqdm
 
 # Constants
@@ -88,13 +89,6 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
     input_script.append(f"LOAD {airfoil_file}")
     input_script.append("") # Confirm name
     
-    # Clean up geometry using XFOIL's built-in commands
-    # This specifically prevents SIGFPE floating-point crashes on Linux
-    input_script.append("MDES")    # Enter design menu
-    input_script.append("FILT")    # Smooth geometry
-    input_script.append("EXEC")    # Execute changes
-    input_script.append("")        # Exit MDES
-    
     # Panel operations
     input_script.append("PANE")
     
@@ -150,6 +144,11 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
             if shutil.which("xvfb-run"):
                 cmd = ["xvfb-run", "-a", XFOIL_CMD]
 
+        # Setup process group for clean killing on Linux
+        preexec_fn = None
+        if os.name != 'nt':
+            preexec_fn = os.setsid
+
         process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
@@ -158,7 +157,8 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
             text=True,
             cwd=os.getcwd(),
             startupinfo=startupinfo,
-            creationflags=creationflags
+            creationflags=creationflags,
+            preexec_fn=preexec_fn
         )
         
         # Send input
@@ -170,13 +170,18 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
             timeout=max(total_timeout, 10)
         )
         
-        if process.returncode != 0:
-            print(f"\n[XFOIL ERROR] Exit code {process.returncode}")
-            print(f"STDOUT: {stdout_data}")
-            print(f"STDERR: {stderr_data}")
+        if process.returncode != 0 and process.returncode is not None:
+            # We don't want to print every time it fails, just suppress the exception
+            pass
         
     except subprocess.TimeoutExpired:
-        process.kill()
+        if os.name == 'nt':
+            process.kill()
+        else:
+            try:
+                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            except Exception:
+                process.kill()
         pass
     except Exception as e:
         warnings.warn(f"XFOIL execution error: {e}")
