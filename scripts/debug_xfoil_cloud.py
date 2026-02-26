@@ -50,6 +50,7 @@ def run_debug():
     script += "debug_polar.txt\n\n"
     script += "ALFA 5.0\n"
     script += "PACC\n"
+    script += "\n"
     script += "QUIT\n"
     
     print("Running script:")

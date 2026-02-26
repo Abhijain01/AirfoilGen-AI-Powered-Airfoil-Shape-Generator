@@ -128,7 +128,7 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
         input_script.append("PACC")
     
     # Quit
-    input_script.append("QUIT") # Quit OPER
+    input_script.append("")     # Exit OPER menu
     input_script.append("QUIT") # Quit XFOIL
     
     # 3. Run XFOIL (Single Process)
