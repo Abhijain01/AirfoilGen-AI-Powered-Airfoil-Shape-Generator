@@ -34,8 +34,9 @@ XFOIL_CMD = xfoil_path if xfoil_path else "xfoil"
 TEMP_DIR = "xfoil_temp"
 
 if xfoil_path:
-    print(f"XFOIL executable found at: {xfoil_path}")
+    print(f"XFOIL executable found at: {xfoil_path}", flush=True)
 else:
+    print("XFOIL executable not found in PATH. Analysis may fail.", flush=True)
     warnings.warn("XFOIL executable not found in PATH. Analysis may fail.")
 
 def _write_airfoil_file(x, y, filename):
@@ -228,16 +229,11 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
             except:
                 pass
                 
-    # Cleanup airfoil
-    try:
-        os.remove(airfoil_file)
-    except:
-        pass
-        
     # [DEBUG] Print exactly what XFOIL did if it failed to converge
     if n_converged == 0:
-        print(f"\n[DEBUG XFOIL] 0 Converged. STDOUT Length: {len(stdout_data)}, STDERR: {stderr_data.strip()[:200]}")
-        print(f"[DEBUG XFOIL] Last 500 chars of STDOUT:\n{stdout_data[-500:]}\n")
+        print(f"\n[DEBUG XFOIL] 0 Converged. STDOUT: {len(stdout_data)} bytes. STDERR: {stderr_data.strip()[:200]}", flush=True)
+        print(f"[DEBUG XFOIL] STDOUT head:\n{stdout_data[:200]}", flush=True)
+        print(f"[DEBUG XFOIL] STDOUT tail:\n{stdout_data[-400:]}\n", flush=True)
         
     return results, n_converged, n_total
 
