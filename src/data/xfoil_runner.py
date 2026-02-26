@@ -150,26 +150,50 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
         if os.name != 'nt':
             preexec_fn = os.setsid
 
-        process = subprocess.Popen(
-            cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            cwd=os.getcwd(),
-            startupinfo=startupinfo,
-            creationflags=creationflags,
-            preexec_fn=preexec_fn
-        )
+        stdout_file = os.path.join(TEMP_DIR, f"stdout_{run_id}.txt")
+        stderr_file = os.path.join(TEMP_DIR, f"stderr_{run_id}.txt")
         
-        # Send input
-        # Increase timeout based on number of Re runs
-        total_timeout = timeout * len(alpha_range) * len(reynolds_numbers) * 0.5
-        
-        stdout_data, stderr_data = process.communicate(
-            input="\n".join(input_script),
-            timeout=max(total_timeout, 10)
-        )
+        with open(stdout_file, "w") as out_f, open(stderr_file, "w") as err_f:
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=out_f,
+                stderr=err_f,
+                text=True,
+                cwd=os.getcwd(),
+                startupinfo=startupinfo,
+                creationflags=creationflags,
+                preexec_fn=preexec_fn
+            )
+            
+            # Send input
+            # Increase timeout based on number of Re runs
+            total_timeout = timeout * len(alpha_range) * len(reynolds_numbers) * 0.5
+            
+            try:
+                process.communicate(
+                    input="\n".join(input_script),
+                    timeout=max(total_timeout, 10)
+                )
+            except subprocess.TimeoutExpired:
+                if os.name == 'nt':
+                    process.kill()
+                else:
+                    try:
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    except Exception:
+                        process.kill()
+                pass
+
+        # Read the logs back
+        try:
+            with open(stdout_file, "r") as f:
+                stdout_data = f.read()
+            with open(stderr_file, "r") as f:
+                stderr_data = f.read()
+        except:
+            stdout_data = "Could not read stdout file"
+            stderr_data = "Could not read stderr file"
         
         # VERY IMPORTANT DEBUGGING RULE
         # Try to always print the stderr if XFOIL wrote anything there, and stdout length
@@ -177,17 +201,10 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
         if True: # Always collect for debugging the zero convergence problem
             pass
         
-    except subprocess.TimeoutExpired:
-        if os.name == 'nt':
-            process.kill()
-        else:
-            try:
-                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-            except Exception:
-                process.kill()
-        pass
     except Exception as e:
         warnings.warn(f"XFOIL execution error: {e}")
+        stdout_data = str(e)
+        stderr_data = str(e)
         pass
     
     # 4. Parse Outputs
