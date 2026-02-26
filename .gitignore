@@ -28,8 +28,8 @@ data/processed/
 data/generated_designs/
 
 # Model checkpoints (too large for git)
-checkpoints/*.pt
-checkpoints/*.pkl
+# checkpoints/*.pt
+# checkpoints/*.pkl
 
 # Results
 results/figures/
