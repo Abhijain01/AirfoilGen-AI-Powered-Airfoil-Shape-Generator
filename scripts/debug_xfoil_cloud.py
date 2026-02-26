@@ -41,7 +41,7 @@ def run_debug():
     print(f"Created dummy airfoil at: {dat_path}")
     
     # 2. Build full execution script
-    script = f"LOAD {dat_path}\n"
+    script = "LOAD debug_airfoil.dat\n"
     script += "PANE\n"
     script += "OPER\n"
     script += "VISC 500000\n"
