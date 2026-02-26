@@ -131,13 +131,20 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
     try:
         startupinfo = None
         creationflags = 0
+        cmd = [XFOIL_CMD]
+        
         if os.name == 'nt':
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             creationflags = subprocess.CREATE_NO_WINDOW
+        else:
+            # On Linux (like Streamlit Cloud), XFOIL often hangs without an X display.
+            # Use xvfb-run to provide a virtual framebuffer if available.
+            if shutil.which("xvfb-run"):
+                cmd = ["xvfb-run", "-a", XFOIL_CMD]
 
         process = subprocess.Popen(
-            XFOIL_CMD,
+            cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
