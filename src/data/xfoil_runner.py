@@ -170,8 +170,10 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
             timeout=max(total_timeout, 10)
         )
         
-        if process.returncode != 0 and process.returncode is not None:
-            # We don't want to print every time it fails, just suppress the exception
+        # VERY IMPORTANT DEBUGGING RULE
+        # Try to always print the stderr if XFOIL wrote anything there, and stdout length
+        # to ensure it's actually running the fluid simulation
+        if True: # Always collect for debugging the zero convergence problem
             pass
         
     except subprocess.TimeoutExpired:
@@ -231,6 +233,11 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
         os.remove(airfoil_file)
     except:
         pass
+        
+    # [DEBUG] Print exactly what XFOIL did if it failed to converge
+    if n_converged == 0:
+        print(f"\n[DEBUG XFOIL] 0 Converged. STDOUT Length: {len(stdout_data)}, STDERR: {stderr_data.strip()[:200]}")
+        print(f"[DEBUG XFOIL] Last 500 chars of STDOUT:\n{stdout_data[-500:]}\n")
         
     return results, n_converged, n_total
 
