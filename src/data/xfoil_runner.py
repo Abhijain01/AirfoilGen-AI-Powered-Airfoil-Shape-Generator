@@ -88,6 +88,13 @@ def analyze_airfoil(x_upper, y_upper, x_lower, y_lower,
     input_script.append(f"LOAD {airfoil_file}")
     input_script.append("") # Confirm name
     
+    # Clean up geometry using XFOIL's built-in commands
+    # This specifically prevents SIGFPE floating-point crashes on Linux
+    input_script.append("MDES")    # Enter design menu
+    input_script.append("FILT")    # Smooth geometry
+    input_script.append("EXEC")    # Execute changes
+    input_script.append("")        # Exit MDES
+    
     # Panel operations
     input_script.append("PANE")
     
